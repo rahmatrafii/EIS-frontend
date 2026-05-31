@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { ToastProvider } from "@/stores/ToastContext";
+import { ToastContainer } from "@/components/ui/ToastContainer";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -34,7 +36,10 @@ export default function RootLayout({
         className="min-h-full flex flex-col font-inter bg-background text-on-background"
         suppressHydrationWarning
       >
-        {children}
+        <ToastProvider>
+          {children}
+          <ToastContainer />
+        </ToastProvider>
       </body>
     </html>
   );

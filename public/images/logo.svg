@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none">
+  <!-- Gradient definitions for premium look -->
+  <defs>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803d" />
+      <stop offset="100%" stop-color="#00652c" />
+    </linearGradient>
+    <linearGradient id="pawGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7cf994" />
+      <stop offset="100%" stop-color="#006e2d" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle for structure -->
+  <circle cx="50" cy="50" r="46" fill="#f0fdf4" stroke="#dcfce7" stroke-width="2"/>
+
+  <!-- Leaf Base (representing Nature/Environment) -->
+  <path d="M50 18 C72 32, 70 70, 50 82 C30 70, 28 32, 50 18 Z" fill="url(#leafGrad)" />
+  <path d="M50 18 L50 82" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+
+  <!-- Paw Print Icon (representing Wildlife/Zoo) -->
+  <!-- Main Pad -->
+  <path d="M50 64 C56 64, 59 58, 50 54 C41 58, 44 64, 50 64 Z" fill="url(#pawGrad)"/>
+  <!-- Toes -->
+  <circle cx="37" cy="48" r="4.5" fill="url(#pawGrad)"/>
+  <circle cx="44" cy="40" r="5" fill="url(#pawGrad)"/>
+  <circle cx="56" cy="40" r="5" fill="url(#pawGrad)"/>
+  <circle cx="63" cy="48" r="4.5" fill="url(#pawGrad)"/>
+</svg>
