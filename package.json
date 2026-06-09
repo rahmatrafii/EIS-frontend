@@ -9,12 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tiptap/react": "^3.26.0",
+    "@tiptap/starter-kit": "^3.26.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
+    "jsqr": "^1.4.0",
     "lucide-react": "^1.17.0",
     "next": "16.2.6",
+    "qrcode.react": "^4.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {

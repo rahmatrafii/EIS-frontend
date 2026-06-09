@@ -13,7 +13,9 @@ import { OtpInput } from "@/components/auth/OtpInput";
 import { OtpCountdown } from "@/components/auth/OtpCountdown";
 import { useToast } from "@/stores/ToastContext";
 import { verifyOtp, requestOtp } from "@/services/auth.service";
-import { saveToken } from "@/lib/token";
+import { saveToken, saveActiveSessionId } from "@/lib/token";
+import { getSessionHistory } from "@/services/session.service";
+import { getQuizResult } from "@/services/quiz.service";
 import { ROUTES } from "@/constants/routes";
 
 export default function VerifyOtpPage() {
@@ -85,7 +87,19 @@ export default function VerifyOtpPage() {
       document.cookie = `eis_auth=1; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       document.cookie = `eis_role=${result.data.user.role}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
-      // Redirect ke halaman pre-zoo test (SOP-13 V-03)
+      // Redirect ke halaman dashboard /home jika ada sesi aktif yang sudah pre-test, atau ke pre-zoo test (SOP-13 V-03)
+      const historyResult = await getSessionHistory();
+      if (historyResult.success) {
+        const activeDbSession = historyResult.data.find((s) => !s.isCompleted);
+        if (activeDbSession) {
+          saveActiveSessionId(activeDbSession.id.toString());
+          const quizResult = await getQuizResult(activeDbSession.id);
+          if (quizResult.success && quizResult.data.hasPreZoo) {
+            router.push(ROUTES.home);
+            return;
+          }
+        }
+      }
       router.push(ROUTES.quiz.preZoo);
     } catch {
       toast.error("Terjadi kesalahan sistem saat memverifikasi. Silakan coba lagi.");
@@ -138,20 +152,33 @@ export default function VerifyOtpPage() {
     <MobileShell>
       <PageTransition className="md:flex md:flex-row md:items-stretch md:min-h-full md:bg-surface">
         {/* Header Section (approx 40% width on tablet) */}
-        <section className="bg-primary pt-12 pb-16 px-edge-margin relative md:w-[40%] md:h-full md:pt-0 md:pb-0 md:px-10 md:flex md:flex-col md:justify-center md:rounded-r-3xl md:rounded-tl-none md:z-30 md:shadow-[4px_0_20px_rgba(0,0,0,0.05)]">
-          {/* Decorative circular element */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-container rounded-full opacity-20 -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+        <section className="bg-gradient-to-br from-primary via-on-primary-fixed-variant to-[#002f12] pt-12 pb-16 px-edge-margin relative md:w-[40%] md:h-full md:pt-0 md:pb-0 md:px-10 md:flex md:flex-col md:justify-center md:rounded-r-[2.5rem] md:rounded-tl-none md:z-30 md:shadow-[6px_0_24px_rgba(0,0,0,0.06)] overflow-hidden">
+          {/* Glow Effect */}
+          <div
+            aria-hidden="true"
+            className="absolute w-72 h-72 rounded-full bg-[#95f8a7]/10 blur-3xl z-0 pointer-events-none"
+          ></div>
           
           <PageHeader
-            centerTitle
-            title="Verifikasi Email"
             backHref={ROUTES.register}
             className="mb-8 md:absolute md:top-8 md:left-8 md:mb-0"
           />
+
+          <div className="text-center md:text-left z-10 relative md:mt-8 select-none">
+            <span className="block text-[10px] md:text-[12px] uppercase tracking-[0.25em] text-[#95f8a7] font-bold mb-2">
+              Zoo Exploration
+            </span>
+            <h1 className="font-plus-jakarta-sans text-[26px] md:text-[34px] font-bold text-on-primary mb-2 leading-[1.3]">
+              Verifikasi Email
+            </h1>
+            <p className="font-inter text-[14px] md:text-[16px] text-on-primary/80 leading-[1.6]">
+              Verifikasi identitas penjelajahmu
+            </p>
+          </div>
         </section>
 
         {/* Main Canvas Area (approx 60% width on tablet) */}
-        <main className="flex-1 bg-surface rounded-t-2xl -mt-6 md:-mt-0 px-edge-margin pt-8 pb-12 md:pt-16 md:px-12 z-20 relative flex flex-col items-center min-h-[500px] md:min-h-full md:w-[60%] md:flex md:flex-col md:justify-center md:shadow-none md:rounded-t-none md:overflow-y-auto">
+        <main className="flex-1 bg-surface-container-lowest rounded-t-[2.5rem] md:rounded-t-none px-edge-margin pt-8 pb-12 md:pt-16 md:px-12 z-20 relative flex flex-col items-center min-h-[500px] md:min-h-full md:w-[60%] md:flex md:flex-col md:justify-center md:shadow-none md:rounded-t-none md:overflow-y-auto -mt-10 md:-mt-0">
           <div className="w-full max-w-[400px] mx-auto flex flex-col justify-center h-full items-center">
             {/* Illustration envelope */}
             <div className="w-24 h-24 bg-surface-container-high rounded-full flex items-center justify-center mb-6 shadow-sm">
@@ -196,7 +223,7 @@ export default function VerifyOtpPage() {
                 {!canResend ? (
                   <OtpCountdown
                     key={timerKey}
-                    duration={60}
+                    duration={600}
                     onComplete={handleCountdownComplete}
                   />
                 ) : (

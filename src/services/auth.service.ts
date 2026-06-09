@@ -26,3 +26,8 @@ export async function requestOtp(email: string) {
     isPublic: true,
   });
 }
+
+export async function getUserProfile() {
+  return apiRequest<UserProfile>(API.users.profile);
+}
+

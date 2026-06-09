@@ -11,7 +11,9 @@ import { OtpInput } from "@/components/auth/OtpInput";
 import { OtpCountdown } from "@/components/auth/OtpCountdown";
 import { useToast } from "@/stores/ToastContext";
 import { requestOtp, verifyOtp } from "@/services/auth.service";
-import { saveToken, getActiveSessionId } from "@/lib/token";
+import { saveToken, getActiveSessionId, saveActiveSessionId } from "@/lib/token";
+import { getSessionHistory } from "@/services/session.service";
+import { getQuizResult } from "@/services/quiz.service";
 import { validateEmail } from "@/lib/validators";
 import { ROUTES } from "@/constants/routes";
 import { fadeInUp } from "@/lib/animations";
@@ -139,11 +141,23 @@ export function LoginForm({ step, setStep, email, setEmail }: LoginFormProps) {
       document.cookie = `eis_role=${result.data.user.role}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
       // Determine redirect URL:
-      // If there is an active session in progress, go to /home. Otherwise go to pre-test /quiz/pre-zoo.
+      // If there is an active session in progress, go to /home. Otherwise check database history.
       const activeSession = getActiveSessionId();
       if (activeSession) {
         router.push(ROUTES.home);
       } else {
+        const historyResult = await getSessionHistory();
+        if (historyResult.success) {
+          const activeDbSession = historyResult.data.find((s) => !s.isCompleted);
+          if (activeDbSession) {
+            saveActiveSessionId(activeDbSession.id.toString());
+            const quizResult = await getQuizResult(activeDbSession.id);
+            if (quizResult.success && quizResult.data.hasPreZoo) {
+              router.push(ROUTES.home);
+              return;
+            }
+          }
+        }
         router.push(ROUTES.quiz.preZoo);
       }
     } catch {
@@ -228,7 +242,7 @@ export function LoginForm({ step, setStep, email, setEmail }: LoginFormProps) {
           type="submit"
           size="lg"
           isLoading={isSubmitting}
-          className="w-full py-4 bg-primary text-on-primary rounded-full font-plus-jakarta-sans text-[20px] font-semibold flex items-center justify-center gap-2 hover:bg-primary-container transition-all duration-200 active:scale-95 shadow-sm mt-auto"
+          className="w-full py-3.5 bg-primary text-on-primary rounded-full font-plus-jakarta-sans text-[18px] font-semibold flex items-center justify-center gap-2 hover:bg-primary/95 transition-all duration-200 active:scale-[0.98] shadow-md mt-auto"
         >
           <span>Kirim Kode OTP</span>
           {!isSubmitting && <ArrowRight className="h-5 w-5 transition-transform" />}
@@ -245,7 +259,7 @@ export function LoginForm({ step, setStep, email, setEmail }: LoginFormProps) {
         <button
           type="button"
           onClick={() => router.push(ROUTES.register)}
-          className="w-full bg-transparent border-2 border-primary text-primary rounded-full py-4 font-plus-jakarta-sans text-[20px] font-semibold hover:bg-primary/5 active:scale-95 transition-all duration-200 select-none cursor-pointer mb-2"
+          className="w-full bg-transparent border border-primary/30 text-primary rounded-full py-3.5 font-plus-jakarta-sans text-[18px] font-semibold hover:bg-primary/5 active:scale-[0.98] transition-all duration-200 select-none cursor-pointer mb-2"
         >
           Daftar Sekarang
         </button>
@@ -262,13 +276,13 @@ export function LoginForm({ step, setStep, email, setEmail }: LoginFormProps) {
       className="flex flex-col flex-1 w-full"
     >
       {/* Illustration Envelope */}
-      <div className="w-24 h-24 bg-surface-container-high rounded-full flex items-center justify-center mb-6 shadow-sm mx-auto">
-        <Mail className="h-12 w-12 text-primary stroke-[1.5]" />
+      <div className="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mb-6 shadow-sm mx-auto">
+        <Mail className="h-10 w-10 text-primary stroke-[1.5]" />
       </div>
 
       {/* Instructions */}
-      <div className="text-center mb-8 w-full">
-        <h2 className="font-plus-jakarta-sans text-[24px] font-bold text-on-surface mb-2 leading-[1.3]">
+      <div className="text-center mb-6 w-full">
+        <h2 className="font-plus-jakarta-sans text-[22px] font-bold text-on-surface mb-2 leading-[1.3]">
           Cek emailmu!
         </h2>
         <p className="font-inter text-[14px] text-on-surface-variant mb-2 leading-[1.6]">
@@ -299,11 +313,11 @@ export function LoginForm({ step, setStep, email, setEmail }: LoginFormProps) {
         )}
 
         {/* Visual Countdown Timer */}
-        <div className="text-center mb-8 h-6 flex items-center justify-center">
+        <div className="text-center mb-6 h-6 flex items-center justify-center">
           {!canResend ? (
             <OtpCountdown
               key={timerKey}
-              duration={60}
+              duration={600}
               onComplete={handleCountdownComplete}
             />
           ) : (
@@ -322,7 +336,7 @@ export function LoginForm({ step, setStep, email, setEmail }: LoginFormProps) {
           size="lg"
           isLoading={isSubmitting}
           disabled={otp.length < 6 || isSubmitting}
-          className="w-full py-4 bg-primary text-on-primary rounded-full font-plus-jakarta-sans text-[20px] font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all duration-100 shadow-lg mt-auto"
+          className="w-full py-3.5 bg-primary text-on-primary rounded-full font-plus-jakarta-sans text-[18px] font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-100 shadow-md mt-auto"
         >
           <span>Masuk Sekarang</span>
           {!isSubmitting && <Check className="h-5 w-5 ml-1" />}

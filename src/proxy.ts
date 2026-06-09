@@ -7,6 +7,7 @@ const PUBLIC_ROUTES = [
   ROUTES.login,
   ROUTES.register,
   ROUTES.verifyOtp,
+  ROUTES.admin.login,
   "/retention", // prefix matching for retention token urls
 ];
 
@@ -22,7 +23,7 @@ export function proxy(request: NextRequest) {
   // 1. Handle ROOT Path / Redirection using Proxy
   if (pathname === "/") {
     if (authCookie) {
-      if (userRole === "admin") {
+      if (userRole?.toLowerCase() === "admin") {
         return NextResponse.redirect(new URL(ROUTES.admin.dashboard, request.url));
       }
       return NextResponse.redirect(new URL(ROUTES.home, request.url));
@@ -37,14 +38,21 @@ export function proxy(request: NextRequest) {
 
   // 3. Route Guard: If not logged in and accessing a protected route
   if (!isPublicRoute && !authCookie) {
-    const loginUrl = new URL(ROUTES.login, request.url);
+    const isUnderAdmin = pathname.startsWith("/admin");
+    const loginUrl = new URL(isUnderAdmin ? ROUTES.admin.login : ROUTES.login, request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
+  // Visitor Guard: Accessing visitor route but is an admin
+  const isVisitorRoute = !isPublicRoute && !pathname.startsWith("/admin");
+  if (isVisitorRoute && userRole?.toLowerCase() === "admin") {
+    return NextResponse.redirect(new URL(ROUTES.admin.dashboard, request.url));
+  }
+
   // 4. Role Guard: Accessing admin route but is not admin
-  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
-  if (isAdminRoute && userRole !== "admin") {
+  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route)) && pathname !== ROUTES.admin.login;
+  if (isAdminRoute && userRole?.toLowerCase() !== "admin") {
     // If returning visitor, redirect to visitor home, otherwise to login
     const fallbackUrl = authCookie
       ? new URL(ROUTES.home, request.url)
@@ -52,9 +60,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(fallbackUrl);
   }
 
-  // 5. If already logged in and visiting auth pages (welcome/login/register), redirect to home
-  if (authCookie && (pathname === ROUTES.welcome || pathname === ROUTES.login || pathname === ROUTES.register)) {
-    if (userRole === "admin") {
+  // 5. If already logged in and visiting auth pages (welcome/login/register/admin-login), redirect to home
+  if (authCookie && (pathname === ROUTES.welcome || pathname === ROUTES.login || pathname === ROUTES.register || pathname === ROUTES.admin.login)) {
+    if (userRole?.toLowerCase() === "admin") {
       return NextResponse.redirect(new URL(ROUTES.admin.dashboard, request.url));
     }
     return NextResponse.redirect(new URL(ROUTES.home, request.url));

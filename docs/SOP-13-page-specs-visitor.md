@@ -1,4 +1,4 @@
-# SOP-13 — Spesifikasi Halaman Visitor App (18 Halaman)
+# SOP-13 — Spesifikasi Halaman Visitor App (15 Rute Fisik / 18 Komponen Tampilan)
 
 > **Konteks**: Semua halaman visitor adalah **Mobile Web** (max-width 430px). Baca **SOP-15** untuk panduan layout mobile sebelum mengerjakan halaman apapun di sini.
 
@@ -112,17 +112,23 @@ Step 2 — OTP (muncul setelah email berhasil kirim OTP):
 1. Halaman load → panggil `POST /sessions/start` terlebih dahulu untuk buat sesi
 2. Simpan `session_id` aktif ke `sessionStorage`
 3. Fetch soal pre-test
-4. Tampilkan soal satu per satu
-5. Submit semua jawaban → redirect ke `/home`
+4. Tampilkan soal satu per satu (Fase 1: Kuis UI)
+5. Submit semua jawaban → Tampilkan hasil kuis beserta perolehan skor dan ringkasan jawaban (Fase 2: Result UI)
+6. Klik tombol "Mulai Jelajahi Kebun Binatang" → redirect ke `/home`
 
-**Konten:**
-- Header: "Pre-Test" + progress bar (Soal X dari Y)
+**Konten Fase 1 (Kuis UI):**
+- Header: "Kuis Awal" + progress bar (Soal X dari Y)
 - Satu soal per tampilan (bukan scroll)
 - 4 pilihan jawaban (A, B, C, D) sebagai tombol besar touch-friendly
-- Tombol **"Selanjutnya"** → soal berikutnya
-- Soal terakhir: tombol **"Selesai & Mulai Petualangan"**
+- Tombol **"Selanjutnya"** → soal berikutnya atau submit jika di soal terakhir
 
-**State**: `questions`, `currentIndex`, `answers` (map questionId → answer), `isSubmitting`, `isLoading`, `error`
+**Konten Fase 2 (Result UI):**
+- Header: "Hasil Kuis"
+- Score Hero: Icon piala (`emoji_events`), teks skor besar (misal: "4 / 5"), tagline motivasi ("Luar Biasa!"), dan keterangan detail.
+- Ringkasan Jawaban: List seluruh pertanyaan kuis awal beserta indikator benar (centang hijau) atau salah (silang merah lengkap dengan kunci jawaban asli).
+- Tombol CTA Utama: "Mulai Jelajahi Kebun Binatang" → mengarahkan pengguna ke `/home`
+
+**State**: `phase: 'quiz' | 'result'`, `questions`, `currentIndex`, `answers` (map questionId → answer), `submittedResult` (hasil submit dari API), `isSubmitting`, `isLoading`, `error`
 
 **Komponen**: `QuizCard.tsx`, `QuizProgress.tsx`, `QuizOption.tsx`
 
@@ -130,7 +136,7 @@ Step 2 — OTP (muncul setelah email berhasil kirim OTP):
 - Tidak bisa skip soal — harus pilih jawaban sebelum lanjut
 - Tidak bisa kembali ke soal sebelumnya (linear flow)
 - Animasi `fadeInRight` saat pindah soal
-- Jika session sudah ada di sessionStorage → langsung fetch quiz (jangan start session lagi)
+- Jika session sudah ada di sessionStorage → langsung fetch kuis (jangan start session lagi)
 
 ---
 
@@ -192,10 +198,10 @@ Data diteruskan via `sessionStorage` key `eis_current_exhibit`
 - Deskripsi singkat satwa
 - **Materi teks edukasi** — diambil dari `LearningPathContent` sesuai kategori umur user
 - **Grid 4 tombol media** (`MediaGrid.tsx`):
-  - 🔊 Audio → `/exhibit/[id]/audio`
-  - 🎥 Video → `/exhibit/[id]/video`
-  - 🖼️ Infografis → `/exhibit/[id]/infographic`
-  - 🧪 Interactive Lab → `/exhibit/[id]/lab`
+  - 🔊 Audio → Di-render sebagai Modal (`AudioPlayerModal`) di halaman ini
+  - 🎥 Video → Di-render sebagai Modal (`VideoPlayerModal`) di halaman ini
+  - 🖼️ Infografis → Di-render sebagai Modal (`InfographicModal`) di halaman ini
+  - 🧪 Interactive Lab → Mengaktifkan Modal (`LabModal`) untuk memilih jenis game, lalu melakukan *redirect* ke `/exhibit/[exhibit_id]/lab?game=[tipe_game]`
 
 **API saat klik tombol media**: `PATCH /track/interact` → catat jenis media yang diklik
 
@@ -203,39 +209,42 @@ Data diteruskan via `sessionStorage` key `eis_current_exhibit`
 
 **Catatan:**
 - Halaman ini harus bisa scroll (konten teks bisa panjang)
-- Setiap tombol media langsung catat interaksi via `PATCH /track/interact` sebelum navigate
+- Setiap tombol media langsung catat interaksi via `PATCH /track/interact` saat media dibuka (atau diselesaikan)
 - Kategori umur dihitung dari `user.birth_date` menggunakan `src/lib/age.ts`
 
 ---
 
-## V-09 — Halaman Audio Player (`/exhibit/[exhibit_id]/audio`)
+## V-09 — Modal Audio Player (Pop-up di Halaman `/exhibit/[exhibit_id]`)
 
-**API**: `PATCH /track/interact` (catat interaksi)
+**API**: `PATCH /track/interact` (catat interaksi saat play)
 
 **Konten:**
-- Header: nama satwa + tombol back
+- Header: nama satwa + tombol X (tutup modal)
 - Ilustrasi/avatar satwa beranimasi saat audio play (pulse atau gelombang suara)
 - Player kontrol: Play/Pause, progress bar, timestamp (mm:ss / mm:ss)
 - Judul audio: *"Suara [Nama Satwa]"*
 
+**Komponen**: `AudioPlayerModal.tsx`
 **Hook**: `useMediaPlayer.ts` — state: `isPlaying`, `currentTime`, `duration`, `progress`
 
 **Catatan:**
 - Gunakan HTML `<audio>` native — jangan library audio berat
 - Animasi visualisasi suara: lingkaran pulse menggunakan Framer Motion saat `isPlaying`
-- Catat interaksi saat user pertama kali menekan Play (bukan saat halaman load)
+- Catat interaksi saat user pertama kali menekan Play (bukan saat modal dibuka)
 
 ---
 
-## V-10 — Halaman Video Player (`/exhibit/[exhibit_id]/video`)
+## V-10 — Modal Video Player (Pop-up di Halaman `/exhibit/[exhibit_id]`)
 
-**API**: `PATCH /track/interact`
+**API**: `PATCH /track/interact` (catat interaksi saat play)
 
 **Konten:**
-- Header: nama satwa + tombol back
+- Header: nama satwa + tombol X (tutup modal)
 - Video player fullwidth
 - Kontrol: Play/Pause, progress bar, fullscreen button
 - Judul video
+
+**Komponen**: `VideoPlayerModal.tsx`
 
 **Catatan:**
 - Gunakan HTML `<video>` native dengan kontrol custom (bukan browser default)
@@ -244,14 +253,16 @@ Data diteruskan via `sessionStorage` key `eis_current_exhibit`
 
 ---
 
-## V-11 — Halaman Infografis (`/exhibit/[exhibit_id]/infographic`)
+## V-11 — Modal Infografis (Pop-up di Halaman `/exhibit/[exhibit_id]`)
 
-**API**: `PATCH /track/interact`
+**API**: `PATCH /track/interact` (catat interaksi saat modal terbuka)
 
 **Konten:**
-- Header tipis + tombol back
+- Header tipis + tombol X (tutup modal)
 - Gambar infografis full-width, bisa di-pinch zoom (pakai `touch-action: pan-x pan-y` + `overflow: auto`)
 - Teks caption di bawah gambar
+
+**Komponen**: `InfographicModal.tsx`
 
 **Catatan:**
 - Gambar dari URL Cloudinary (sudah dioptimasi)
@@ -266,17 +277,19 @@ Data diteruskan via `sessionStorage` key `eis_current_exhibit`
 
 **Konten:**
 - Header: *"🧪 Lab Interaktif — [Nama Satwa]"* + tombol back
-- Area game (lihat catatan)
+- Area game (disesuaikan dengan parameter query `?game=drag-drop` atau `?game=pasangkan`)
 - Skor realtime selama game
 - Tombol **"Selesai"** → submit skor via `POST /track/lab-log` → kembali ke halaman kandang
 
 **State**: `score`, `isCompleted`, `isSubmitting`
 
 **Catatan tentang game template:**
-- Template game yang SAMA untuk semua satwa, konten berbeda
-- Pilih satu mekanisme game sederhana: **Matching/Drag** (pasangkan fakta satwa ke gambar) ATAU **True/False cepat** (10 pertanyaan, jawab sebelum timer habis)
+- Halaman ini diakses setelah memilih jenis game melalui `LabModal` di halaman kandang.
+- Mendukung beberapa mekanisme game sederhana yang dipilih via query parameter:
+  - **Drag & Drop** (`?game=drag-drop`): Tarik fakta satwa ke zona yang tepat.
+  - **Pasangkan** (`?game=pasangkan`): Cocokkan item yang berpasangan.
 - Tingkat kesulitan dikontrol dari data konten backend, bukan dari kode frontend
-- Buat komponen `InteractiveLab.tsx` yang reusable — terima props: `questions[]`, `onComplete(score)`
+- Buat komponen `LabGameContent.tsx` / `InteractiveLab.tsx` yang reusable
 - Submit lab log dilakukan satu kali saat game selesai (bukan per jawaban)
 
 ---

@@ -15,9 +15,6 @@ export const ROUTES = {
   
   exhibit: {
     detail:       (id: string) => `/exhibit/${id}`,
-    audio:        (id: string) => `/exhibit/${id}/audio`,
-    video:        (id: string) => `/exhibit/${id}/video`,
-    infographic:  (id: string) => `/exhibit/${id}/infographic`,
     lab:          (id: string) => `/exhibit/${id}/lab`,
   },
   
@@ -31,10 +28,14 @@ export const ROUTES = {
   admin: {
     login:     "/admin/login",
     dashboard: "/admin/dashboard",
+    analyticsExhibits: "/admin/analytics/exhibits",
+    analyticsVisitors: "/admin/analytics/visitors",
+    visitorDetail: (id: string | number) => `/admin/analytics/visitors/${id}`,
     exhibits:  "/admin/exhibits",
-    content:   "/admin/content",
-    media:     "/admin/media",
+    exhibitDetail: (id: string | number) => `/admin/exhibits/${id}`,
+    exhibitNew: "/admin/exhibits/new",
     quizzes:   "/admin/quizzes",
+    quizBuilder: (id: string | number) => `/admin/quizzes/${id}`,
   },
 
   // Retention (public)

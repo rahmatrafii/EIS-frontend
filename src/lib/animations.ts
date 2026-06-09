@@ -51,3 +51,18 @@ export const scaleIn: Variants = {
     transition: { duration: 0.15 },
   },
 };
+
+// Slide up dari bawah (untuk bottom sheet modal)
+export const slideUp: Variants = {
+  hidden: { y: "100%", opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
+  },
+  exit: {
+    y: "100%",
+    opacity: 0,
+    transition: { duration: 0.25, ease: [0.4, 0, 1, 1] },
+  },
+};

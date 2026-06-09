@@ -65,7 +65,7 @@ export type ApiResult<T> =
 export type UserRole = 'visitor' | 'admin'
 
 export interface UserProfile {
-  id: string
+  id: number
   name: string
   email: string
   age: number
@@ -88,10 +88,10 @@ export interface VerifyOtpPayload {
 ```ts
 // src/types/exhibit.types.ts
 export type MediaType = 'audio' | 'video' | 'infographic'
-export type AgeCategory = 'child' | 'teen' | 'adult'
+export type AgeCategory = 'CHILD' | 'TEEN' | 'ADULT'
 
 export interface Exhibit {
-  id: string
+  id: number
   name: string
   description: string
   qr_code: string
@@ -100,8 +100,8 @@ export interface Exhibit {
 }
 
 export interface ExhibitMedia {
-  id: string
-  exhibit_id: string
+  id: number
+  exhibit_id: number
   type: MediaType
   url: string
   title: string
@@ -109,8 +109,8 @@ export interface ExhibitMedia {
 }
 
 export interface LearningPathContent {
-  id: string
-  exhibit_id: string
+  id: number
+  exhibit_id: number
   title: string
   body: string
   age_category: AgeCategory
@@ -122,8 +122,8 @@ export interface LearningPathContent {
 export type SessionStatus = 'active' | 'completed'
 
 export interface VisitSession {
-  id: string
-  user_id: string
+  id: number
+  user_id: number
   status: SessionStatus
   started_at: string
   ended_at: string | null
@@ -133,10 +133,10 @@ export interface VisitSession {
 ```ts
 // src/types/quiz.types.ts
 export type QuizType = 'PRE_ZOO' | 'POST_ZOO' | 'RETENTION_1W' | 'RETENTION_1M'
-export type QuizScope = 'general' | 'exhibit'
+export type QuizScope = 'GLOBAL' | 'EXHIBIT'
 
 export interface Question {
-  id: string
+  id: number
   text: string
   options: {
     A: string
@@ -147,22 +147,22 @@ export interface Question {
 }
 
 export interface Quiz {
-  id: string
+  id: number
   title: string
   type: QuizType
   scope: QuizScope
-  exhibit_id: string | null
+  exhibit_id: number | null
   questions: Question[]
 }
 
 export interface QuizSubmitPayload {
-  quiz_id: string
-  session_id: string
-  answers: Array<{ question_id: string; answer: 'A' | 'B' | 'C' | 'D' }>
+  quiz_id: number
+  session_id: number
+  answers: Array<{ question_id: number; answer: 'A' | 'B' | 'C' | 'D' }>
 }
 
 export interface QuizResult {
-  attempt_id: string
+  attempt_id: number
   score: number
   total_questions: number
   correct_answers: number
@@ -183,37 +183,37 @@ export type MediaInteractionType = 'audio' | 'video' | 'infographic'
 
 export interface CheckinPayload {
   qr_code: string
-  session_id: string
+  session_id: number
 }
 
 export interface CheckinResult {
-  interaction_id: string
+  interaction_id: number
   exhibit: Exhibit
 }
 
 export interface InteractPayload {
-  interaction_id: string
+  interaction_id: number
   media_type: MediaInteractionType
-  media_id: string
+  media_id: number
 }
 
 export interface LabLogPayload {
-  interaction_id: string
+  interaction_id: number
   score: number
   activity_name: string
 }
 
 export interface CheckoutPayload {
-  interaction_id: string
+  interaction_id: number
 }
 ```
 
 ```ts
 // src/types/analytics.types.ts
 export interface EisScore {
-  id: string
-  user_id: string
-  session_id: string
+  id: number
+  user_id: number
+  session_id: number
   knowledge_gain_score: number
   engagement_score: number
   retention_score: number

@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/stores/ToastContext";
-import { registerUser } from "@/services/auth.service";
+import { registerUser, requestOtp } from "@/services/auth.service";
 import { validateRegisterForm } from "@/lib/validators";
 import { calculateAge, getAgeCategoryLabel } from "@/lib/age";
 import { ROUTES } from "@/constants/routes";
@@ -112,11 +112,19 @@ export function RegisterForm() {
         return;
       }
 
-      toast.success("Registrasi berhasil! Kode OTP telah dikirim.");
-      
       // Simpan e-mail ke sessionStorage sesuai spesifikasi SOP-13 (V-02)
       if (typeof window !== "undefined") {
         sessionStorage.setItem("email", form.email.trim());
+      }
+
+      // Kirim OTP ke email user yang baru terdaftar (Opsi A — frontend-driven)
+      const otpResult = await requestOtp(form.email.trim().toLowerCase());
+      if (!otpResult.success) {
+        // Registrasi sudah berhasil, tapi OTP gagal dikirim.
+        // User tetap dialihkan ke halaman OTP dan bisa menekan "Kirim ulang".
+        toast.warning("Registrasi berhasil, tapi gagal mengirim OTP. Silakan kirim ulang di halaman berikutnya.");
+      } else {
+        toast.success("Registrasi berhasil! Kode OTP telah dikirim ke emailmu.");
       }
 
       // Redirect ke halaman verifikasi OTP
@@ -185,14 +193,14 @@ export function RegisterForm() {
       </div>
 
       {/* Spacer */}
-      <div className="flex-1 min-h-[40px]" />
+      <div className="flex-1 min-h-[24px]" />
 
       {/* Submit Button */}
       <Button
         type="submit"
         size="lg"
         isLoading={isSubmitting}
-        className="w-full py-4 bg-primary text-on-primary rounded-full font-plus-jakarta-sans text-[20px] font-semibold flex items-center justify-center gap-2 hover:bg-primary-container transition-colors active:scale-95 duration-100 mt-auto shadow-sm"
+        className="w-full py-3.5 bg-primary text-on-primary rounded-full font-plus-jakarta-sans text-[18px] font-semibold flex items-center justify-center gap-2 hover:bg-primary/95 transition-colors active:scale-[0.98] duration-100 mt-auto shadow-md"
       >
         Kirim Kode OTP →
       </Button>
