@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { X, Home, Loader2, RefreshCw, Brain, Sparkles, Activity, History } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Home, Loader2, RefreshCw, Brain, Sparkles, Activity, History, ChevronDown, ChevronUp } from "lucide-react";
 
 import { getUserProfile } from "@/services/auth.service";
 import { getEisScore } from "@/services/analytics.service";
@@ -24,6 +24,9 @@ export function ScoreContent() {
 
   // Count-up state untuk total skor
   const [animatedScore, setAnimatedScore] = useState(0);
+
+  // State untuk melacak bagian rincian skor yang diperluas
+  const [expandedSection, setExpandedSection] = useState<"knowledge" | "engagement" | "retention" | null>(null);
 
   // Memuat data profil & skor EIS secara paralel
   const loadData = useCallback(async () => {
@@ -329,7 +332,12 @@ export function ScoreContent() {
             
             <div className="flex flex-col gap-5">
               {/* Knowledge Gain Component */}
-              <div className="p-4 bg-white/60 border border-outline-variant/10 rounded-2xl shadow-xs hover:border-primary/20 hover:shadow-md transition-all duration-300 flex flex-col gap-3">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setExpandedSection(expandedSection === "knowledge" ? null : "knowledge")}
+                className="p-4 bg-white/60 border border-outline-variant/10 rounded-2xl shadow-xs hover:border-primary/25 hover:shadow-md transition-all duration-300 flex flex-col gap-3 cursor-pointer active:scale-[0.99] select-none outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
@@ -340,10 +348,15 @@ export function ScoreContent() {
                       <span className="text-[10px] font-extrabold text-outline/80 uppercase tracking-wider block mt-1">Bobot 40%</span>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="flex items-center gap-2 text-right">
                     <span className="font-plus-jakarta-sans text-sm font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/10">
                       +{knowledgeGainPercent}%
                     </span>
+                    {expandedSection === "knowledge" ? (
+                      <ChevronUp className="w-4 h-4 text-primary" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-on-surface-variant/60" />
+                    )}
                   </div>
                 </div>
                 
@@ -360,10 +373,45 @@ export function ScoreContent() {
                     className="h-full bg-primary rounded-full"
                   ></motion.div>
                 </div>
+
+                {/* Expanded Content */}
+                <AnimatePresence>
+                  {expandedSection === "knowledge" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden mt-2 pt-3 border-t border-outline-variant/10 text-xs text-on-surface-variant/90 space-y-2 font-inter"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/5">
+                        <span className="font-semibold text-on-surface-variant">Pre-Test (Kuis Awal):</span>
+                        <span className="font-bold text-on-surface">{preZooScore} / 100</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/5">
+                        <span className="font-semibold text-on-surface-variant">Post-Test (Kuis Akhir):</span>
+                        <span className="font-bold text-on-surface">{postZooScore} / 100</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-primary/[0.04] p-2.5 rounded-xl border border-primary/10">
+                        <span className="font-semibold text-primary">Kenaikan Pengetahuan:</span>
+                        <span className="font-bold text-primary">+{knowledgeGainPercent}%</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-on-surface-variant/65 italic pt-1 text-center">
+                        * Nilai ini menggambarkan persentase peningkatan pemahaman satwa liar Anda setelah mengunjungi kebun binatang.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Engagement Component */}
-              <div className="p-4 bg-white/60 border border-outline-variant/10 rounded-2xl shadow-xs hover:border-blue-500/20 hover:shadow-md transition-all duration-300 flex flex-col gap-3">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setExpandedSection(expandedSection === "engagement" ? null : "engagement")}
+                className="p-4 bg-white/60 border border-outline-variant/10 rounded-2xl shadow-xs hover:border-blue-500/25 hover:shadow-md transition-all duration-300 flex flex-col gap-3 cursor-pointer active:scale-[0.99] select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0 border border-blue-100">
@@ -374,10 +422,15 @@ export function ScoreContent() {
                       <span className="text-[10px] font-extrabold text-outline/80 uppercase tracking-wider block mt-1">Bobot 35%</span>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="flex items-center gap-2 text-right">
                     <span className="font-plus-jakarta-sans text-sm font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
                       {engagementScore}/100
                     </span>
+                    {expandedSection === "engagement" ? (
+                      <ChevronUp className="w-4 h-4 text-blue-600" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-on-surface-variant/60" />
+                    )}
                   </div>
                 </div>
 
@@ -402,40 +455,156 @@ export function ScoreContent() {
                     className="h-full bg-blue-500 rounded-full"
                   ></motion.div>
                 </div>
+
+                {/* Expanded Content */}
+                <AnimatePresence>
+                  {expandedSection === "engagement" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden mt-2 pt-3 border-t border-outline-variant/10 text-xs text-on-surface-variant/90 space-y-2 font-inter"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/5">
+                        <span className="font-semibold text-on-surface-variant">Durasi Belajar Aktif:</span>
+                        <span className="font-bold text-on-surface">{Math.floor(totalDurationSeconds / 60)} menit</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/5">
+                        <span className="font-semibold text-on-surface-variant">Kandang Dikunjungi:</span>
+                        <span className="font-bold text-on-surface">{totalExhibitsVisited} Kandang</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/5">
+                        <span className="font-semibold text-on-surface-variant">Interaksi Lab Game:</span>
+                        <span className="font-bold text-emerald-600">Selesai / Aktif</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-on-surface-variant/65 pt-1">
+                        * Keterlibatan dihitung dari keaktifan Anda di kebun binatang, durasi pembelajaran di area kandang satwa, serta penyelesaian mini-games di Lab Interaktif.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Retention Component */}
-              <div className="p-4 bg-white/60 border border-outline-variant/10 rounded-2xl shadow-xs hover:border-purple-500/20 hover:shadow-md transition-all duration-300 flex flex-col gap-3">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setExpandedSection(expandedSection === "retention" ? null : "retention")}
+                className="p-4 bg-white/60 border border-outline-variant/10 rounded-2xl shadow-xs hover:border-purple-500/25 hover:shadow-md transition-all duration-300 flex flex-col gap-3 cursor-pointer active:scale-[0.99] select-none outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 shrink-0 border border-purple-100">
                       <History className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
-                      <h4 className="font-plus-jakarta-sans text-sm font-bold leading-none text-on-surface">Retention</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-plus-jakarta-sans text-sm font-bold leading-none text-on-surface">Retention</h4>
+                        {(retention1wScore === null || retention1wScore === undefined) &&
+                         (retention1mScore === null || retention1mScore === undefined) && (
+                          <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 rounded-md">
+                            Belum Dikerjakan
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] font-extrabold text-outline/80 uppercase tracking-wider block mt-1">Bobot 25%</span>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="flex items-center gap-2 text-right">
                     <span className="font-plus-jakarta-sans text-sm font-black text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-100">
-                      {retentionScore}/100
+                      {(retentionScore ?? 0)}/100
                     </span>
+                    {expandedSection === "retention" ? (
+                      <ChevronUp className="w-4 h-4 text-purple-600" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-on-surface-variant/60" />
+                    )}
                   </div>
                 </div>
 
                 <div className="flex justify-between text-xs text-on-surface-variant font-semibold px-1">
-                  <span>H+7 Recall: {retention1wScore !== null ? `${retention1wScore}/100` : "-"}</span>
-                  <span>H+30 Recall: {retention1mScore !== null ? `${retention1mScore}/100` : "-"}</span>
+                  <span>
+                    H+7 Recall:{" "}
+                    {typeof retention1wScore === "number" ? (
+                      <span className="text-purple-600 font-bold">{retention1wScore}/100</span>
+                    ) : (
+                      <span className="text-amber-600 font-medium bg-amber-50/70 px-1.5 py-0.5 rounded border border-amber-100/50 text-[10px]">Belum Dikerjakan</span>
+                    )}
+                  </span>
+                  <span>
+                    H+30 Recall:{" "}
+                    {typeof retention1mScore === "number" ? (
+                      <span className="text-purple-600 font-bold">{retention1mScore}/100</span>
+                    ) : (
+                      <span className="text-amber-600 font-medium bg-amber-50/70 px-1.5 py-0.5 rounded border border-amber-100/50 text-[10px]">Belum Dikerjakan</span>
+                    )}
+                  </span>
                 </div>
 
                 <div className="h-3 w-full bg-surface-container rounded-full overflow-hidden p-0.5 border border-outline-variant/5">
                   <motion.div
                     initial={{ width: "0%" }}
-                    animate={{ width: `${retentionScore}%` }}
+                    animate={{ width: `${retentionScore ?? 0}%` }}
                     transition={{ duration: 1.5, ease: "easeOut", delay: 0.6 }}
-                    className={`h-full rounded-full ${retentionScore > 0 ? "bg-purple-500" : "bg-purple-300/40"}`}
+                    className={`h-full rounded-full ${(retentionScore ?? 0) > 0 ? "bg-purple-500" : "bg-purple-300/40"}`}
                   ></motion.div>
                 </div>
+
+                {/* Expanded Content */}
+                <AnimatePresence>
+                  {expandedSection === "retention" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden mt-2 pt-3 border-t border-outline-variant/10 text-xs text-on-surface-variant/90 space-y-2 font-inter"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/5">
+                        <span className="font-semibold text-on-surface-variant">Skor Kuis Retensi H+7 (1 Minggu):</span>
+                        <span className="font-bold text-on-surface">
+                          {typeof retention1wScore === "number" ? (
+                            `${retention1wScore} / 100`
+                          ) : (
+                            <span className="text-amber-600 bg-amber-50/70 px-2 py-0.5 rounded border border-amber-200/50">Belum Dikerjakan</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/5">
+                        <span className="font-semibold text-on-surface-variant">Skor Kuis Retensi H+30 (1 Bulan):</span>
+                        <span className="font-bold text-on-surface">
+                          {typeof retention1mScore === "number" ? (
+                            `${retention1mScore} / 100`
+                          ) : (
+                            <span className="text-amber-600 bg-amber-50/70 px-2 py-0.5 rounded border border-amber-200/50">Belum Dikerjakan</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {((retention1wScore === null || retention1wScore === undefined) ||
+                        (retention1mScore === null || retention1mScore === undefined)) && (
+                        <div className="mt-3 p-3 bg-amber-50/50 border border-amber-200/50 rounded-2xl flex items-start gap-2.5">
+                          <span className="text-amber-600 text-sm mt-0.5">⚠️</span>
+                          <div>
+                            <p className="font-plus-jakarta-sans text-[11px] font-bold text-amber-800 leading-normal">
+                              Kuis Retensi Belum Selesai
+                            </p>
+                            <p className="font-inter text-[10px] text-amber-700/80 leading-relaxed mt-0.5">
+                              Ingatan jangka panjang Anda akan dievaluasi melalui Kuis Retensi H+7 (7 hari setelah kunjungan) dan H+30 (30 hari setelah kunjungan) yang dikirim ke email Anda. Silakan selesaikan kuis untuk memperbarui nilai ini!
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-[10px] leading-relaxed text-on-surface-variant/65 pt-1">
+                        * Kuis Retensi menguji ingatan jangka panjang Anda tentang satwa-satwa yang dipelajari pada hari ke-7 dan hari ke-30 pasca-kunjungan.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
@@ -452,14 +621,14 @@ export function ScoreContent() {
                 <p className="text-[10px] font-extrabold text-outline/80 uppercase tracking-wider">Formula Rumus</p>
                 <div className="flex flex-col gap-1">
                   <code className="text-xs font-mono text-on-surface-variant leading-relaxed break-words">
-                    ({knowledgeGainScore} × 40%) + ({engagementScore} × 35%) + ({retentionScore} × 25%)
+                    ({knowledgeGainScore ?? 0} × 40%) + ({engagementScore ?? 0} × 35%) + ({retentionScore ?? 0} × 25%)
                   </code>
                 </div>
                 <div className="h-px bg-outline-variant/30 w-full my-1" />
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-on-surface-variant">Hasil Akhir</span>
                   <span className="font-plus-jakarta-sans text-xl font-black text-primary">
-                    = {finalEisScore}
+                    = {finalEisScore ?? 0}
                   </span>
                 </div>
               </div>

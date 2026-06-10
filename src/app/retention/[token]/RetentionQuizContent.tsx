@@ -31,6 +31,7 @@ export function RetentionQuizContent({ token }: RetentionQuizContentProps) {
   // API State
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [username, setUsername] = useState<string>("Penjelajah");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -60,8 +61,13 @@ export function RetentionQuizContent({ token }: RetentionQuizContentProps) {
       getUserProfile().then((res) => {
         if (res.success && res.data?.name) {
           setUsername(res.data.name.split(" ")[0]);
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
         }
-      }).catch(() => {});
+      }).catch(() => {
+        setIsLoggedIn(false);
+      });
 
       // 2. Fetch quiz details via public token
       const res = await fetchRetentionQuiz(token);
@@ -186,10 +192,10 @@ export function RetentionQuizContent({ token }: RetentionQuizContentProps) {
             Link kuis retensi ini tidak valid atau sudah kadaluarsa (melebihi batas waktu aktif 24 jam).
           </p>
           <button
-            onClick={() => router.push(ROUTES.profile)}
+            onClick={() => router.push(isLoggedIn ? ROUTES.profile : ROUTES.welcome)}
             className="w-full max-w-[280px] h-12 bg-primary text-on-primary font-plus-jakarta-sans text-[14px] font-bold tracking-wider uppercase rounded-full shadow-md active:scale-95 transition-transform cursor-pointer"
           >
-            Kembali ke Profil
+            {isLoggedIn ? "Kembali ke Profil" : "Kembali ke Beranda"}
           </button>
         </PageTransition>
       </MobileShell>
@@ -211,10 +217,10 @@ export function RetentionQuizContent({ token }: RetentionQuizContentProps) {
             Anda sudah pernah menyelesaikan kuis retensi ini sebelumnya. Terima kasih atas partisipasi Anda!
           </p>
           <button
-            onClick={() => router.push("/profile/retention-status")}
+            onClick={() => router.push(isLoggedIn ? "/profile/retention-status" : ROUTES.welcome)}
             className="w-full max-w-[280px] h-12 bg-primary text-on-primary font-plus-jakarta-sans text-[14px] font-bold tracking-wider uppercase rounded-full shadow-md active:scale-95 transition-transform cursor-pointer"
           >
-            Lihat Status Retensi
+            {isLoggedIn ? "Lihat Status Retensi" : "Kembali ke Beranda"}
           </button>
         </PageTransition>
       </MobileShell>
@@ -257,8 +263,8 @@ export function RetentionQuizContent({ token }: RetentionQuizContentProps) {
 
   return (
     <MobileShell>
-      <PageTransition className="flex-1 flex flex-col bg-[#f8f9fa] select-none text-[#191c1d] min-h-screen">
-        <main className="flex-1 overflow-y-auto pb-[100px] scroll-smooth">
+      <PageTransition className="flex-1 flex flex-col bg-[#f8f9fa] select-none text-[#191c1d] min-h-screen relative">
+        <main className="flex-1 overflow-y-auto pb-[180px] scroll-smooth">
           {phase === "QUIZ" ? (
             <div className="animate-fade-in">
               {/* Header Section */}
@@ -377,36 +383,6 @@ export function RetentionQuizContent({ token }: RetentionQuizContentProps) {
                   );
                 })}
               </section>
-
-              {/* Sticky Progress Footer */}
-              <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-[#e1e3e4] px-5 py-4 shadow-[0_-4px_12px_rgba(55,65,81,0.08)] z-40 pb-safe flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-plus-jakarta-sans text-[13px] font-bold text-[#3f493f]">
-                    {answeredCount} dari {totalQuestions} soal dijawab
-                  </span>
-                  <span className="font-plus-jakarta-sans text-[13px] font-bold text-[#0051d5]">
-                    {progressPercentage}%
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-[#e7e8e9] rounded-full overflow-hidden mb-4">
-                  <div
-                    className="h-full bg-[#0051d5] transition-all duration-500 ease-out"
-                    style={{ width: `${progressPercentage}%` }}
-                  ></div>
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={answeredCount < totalQuestions || isSubmitting}
-                  className={`w-full h-12 font-plus-jakarta-sans text-[16px] font-bold rounded-full transition-all duration-200 flex items-center justify-center ${
-                    answeredCount === totalQuestions
-                      ? "bg-[#00652c] text-white hover:opacity-90 active:scale-[0.98] shadow-md cursor-pointer"
-                      : "bg-[#e1e3e4] text-[#3f493f] opacity-50 cursor-not-allowed"
-                  }`}
-                >
-                  <span>Submit Jawaban</span>
-                  {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin text-white" />}
-                </button>
-              </div>
             </div>
           ) : (
             <div className="animate-fade-in">
@@ -490,22 +466,85 @@ export function RetentionQuizContent({ token }: RetentionQuizContentProps) {
 
               {/* Action Footer */}
               <section className="px-5 mt-8 space-y-4 pb-12">
-                <div className="bg-[#b4c5ff]/20 rounded-xl p-4 text-center border border-[#b4c5ff]/30 text-on-surface-variant">
-                  <p className="font-inter text-[13px] leading-[18px]">
-                    Hasil skor retensi ini telah masuk ke dalam rekapan EIS (Educational Impact Score) Anda untuk
-                    rekomendasi rute!
-                  </p>
-                </div>
-                <button
-                  onClick={() => router.push(ROUTES.profile)}
-                  className="w-full h-12 bg-[#0051d5] hover:bg-[#0051d5]/90 text-white font-plus-jakarta-sans text-[16px] font-bold rounded-full active:scale-[0.97] transition-all cursor-pointer shadow-md select-none text-center"
-                >
-                  Tutup & Kembali
-                </button>
+                {isLoggedIn ? (
+                  <>
+                    <div className="bg-[#b4c5ff]/20 rounded-xl p-4 text-center border border-[#b4c5ff]/30 text-on-surface-variant">
+                      <p className="font-inter text-[13px] leading-[18px]">
+                        Hasil skor retensi ini telah masuk ke dalam rekapan EIS (Educational Impact Score) Anda untuk
+                        rekomendasi rute!
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => router.push(ROUTES.profile)}
+                      className="w-full h-12 bg-[#0051d5] hover:bg-[#0051d5]/90 text-white font-plus-jakarta-sans text-[16px] font-bold rounded-full active:scale-[0.97] transition-all cursor-pointer shadow-md select-none text-center"
+                    >
+                      Tutup & Lihat Profil
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-[#f59e0b]/10 rounded-xl p-4 text-center border border-[#f59e0b]/30 text-on-surface-variant">
+                      <p className="font-inter text-[13px] leading-[18px] text-[#3f493f]">
+                        💡 <strong>Sesi Belum Terhubung:</strong> Anda mengerjakan kuis ini di browser yang belum masuk. Skor Anda sudah disimpan, silakan masuk ke akun Anda untuk melihat statistik EIS lengkap.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={() => router.push(ROUTES.login)}
+                        className="w-full h-12 bg-[#0051d5] hover:bg-[#0051d5]/90 text-white font-plus-jakarta-sans text-[16px] font-bold rounded-full active:scale-[0.97] transition-all cursor-pointer shadow-md select-none text-center"
+                      >
+                        Masuk ke Akun Anda
+                      </button>
+                      <button
+                        onClick={() => router.push(ROUTES.welcome)}
+                        className="w-full h-12 bg-white border border-[#e1e3e4] hover:bg-[#f3f4f5] text-[#3f493f] font-plus-jakarta-sans text-[16px] font-bold rounded-full active:scale-[0.97] transition-all cursor-pointer shadow-md select-none text-center"
+                      >
+                        Kembali ke Beranda
+                      </button>
+                    </div>
+                  </>
+                )}
               </section>
             </div>
           )}
         </main>
+
+        {/* Sticky Progress Footer */}
+        {phase === "QUIZ" && (
+          <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] md:max-w-[850px] lg:max-w-[960px] bg-white/85 backdrop-blur-lg border-t border-slate-200/60 px-6 py-5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] z-40 pb-safe flex flex-col transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-plus-jakarta-sans text-[13px] font-bold text-slate-600 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                {answeredCount} dari {totalQuestions} Soal Dijawab
+              </span>
+              <span className="font-plus-jakarta-sans text-[14px] font-extrabold text-[#0051d5]">
+                {progressPercentage}%
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4 border border-slate-200/20">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-[#0051d5] rounded-full transition-all duration-500 ease-out shadow-[0_0_8px_rgba(0,81,213,0.3)]"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={answeredCount < totalQuestions || isSubmitting}
+              className={`w-full h-12 font-plus-jakarta-sans text-[16px] font-bold rounded-full transition-all duration-300 flex items-center justify-center gap-2 tracking-wide ${
+                answeredCount === totalQuestions
+                  ? "bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-500 hover:to-green-600 text-white hover:shadow-[0_4px_14px_rgba(16,185,129,0.35)] active:scale-[0.98] cursor-pointer"
+                  : "bg-slate-100 text-slate-400 border border-slate-200/50 cursor-not-allowed"
+              }`}
+            >
+              <span>Submit Jawaban</span>
+              {isSubmitting ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin text-white" />
+              ) : answeredCount === totalQuestions ? (
+                <span className="text-[18px]">🚀</span>
+              ) : null}
+            </button>
+          </div>
+        )}
       </PageTransition>
     </MobileShell>
   );

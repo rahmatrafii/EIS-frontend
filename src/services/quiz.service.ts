@@ -45,9 +45,9 @@ export async function getRetentionStatus(): Promise<ApiResult<RetentionStatus>> 
 
   const schedules = res.data || [];
 
-  // Find schedules by their quiz types
-  const h7Schedule = schedules.find((s: any) => s.quizType === "RETENTION_1W");
-  const h30Schedule = schedules.find((s: any) => s.quizType === "RETENTION_1M");
+  // Find schedules by their quiz types (latest first)
+  const h7Schedule = [...schedules].reverse().find((s: any) => s.quizType === "RETENTION_1W");
+  const h30Schedule = [...schedules].reverse().find((s: any) => s.quizType === "RETENTION_1M");
 
   const mapScheduleDetail = (
     schedule: any,

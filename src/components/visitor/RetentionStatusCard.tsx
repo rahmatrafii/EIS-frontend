@@ -1,5 +1,7 @@
 // src/components/visitor/RetentionStatusCard.tsx
 import { cn } from "@/lib/cn";
+import Link from "next/link";
+import { ROUTES } from "@/constants/routes";
 
 export type RetentionStatusType = "PENDING" | "SENT" | "COMPLETED" | "EXPIRED" | "LOCKED";
 
@@ -8,9 +10,10 @@ interface RetentionStatusCardProps {
   title: string;
   date: string;
   status: RetentionStatusType;
+  token?: string | null;
 }
 
-export function RetentionStatusCard({ label, title, date, status }: RetentionStatusCardProps) {
+export function RetentionStatusCard({ label, title, date, status, token }: RetentionStatusCardProps) {
   // Map status values to UI presentation
   const config = {
     PENDING: {
@@ -47,8 +50,15 @@ export function RetentionStatusCard({ label, title, date, status }: RetentionSta
 
   if (!config) return null;
 
-  return (
-    <div className={cn("border rounded-[1.75rem] p-5 flex flex-col justify-between min-h-[140px] shadow-[0_4px_16px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-md", config.cardClass)}>
+  const isClickable = status === "SENT" && !!token;
+  const cardClassName = cn(
+    "border rounded-[1.75rem] p-5 flex flex-col justify-between min-h-[140px] shadow-[0_4px_16px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-md",
+    config.cardClass,
+    isClickable && "cursor-pointer hover:border-primary/45 active:scale-[0.98]"
+  );
+
+  const cardContent = (
+    <>
       <div className="flex justify-between items-start gap-1">
         <span className="font-plus-jakarta-sans text-[15px] font-black tracking-tight text-on-surface">{label}</span>
         <span className={cn("font-plus-jakarta-sans text-[9px] font-extrabold tracking-wider uppercase px-2.5 py-1 rounded-full flex items-center gap-1 select-none", config.badgeClass)}>
@@ -62,6 +72,21 @@ export function RetentionStatusCard({ label, title, date, status }: RetentionSta
         <p className="text-xs text-on-surface-variant/95 mb-1 font-inter font-medium leading-snug">{title}</p>
         <p className="text-[9px] font-plus-jakarta-sans font-bold tracking-widest uppercase text-outline/80">{date}</p>
       </div>
+    </>
+  );
+
+  if (isClickable && token) {
+    return (
+      <Link href={ROUTES.retention(token)} className={cardClassName}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={cardClassName}>
+      {cardContent}
     </div>
   );
 }
+

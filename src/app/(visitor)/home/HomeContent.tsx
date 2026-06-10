@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { useSession } from "@/hooks/useSession";
 import { getUserProfile } from "@/services/auth.service";
-import { getSessionHistory } from "@/services/session.service";
+import { getSessionHistory, startSession } from "@/services/session.service";
 import { getSessionAnalytics } from "@/services/analytics.service";
 import { getRetentionStatus } from "@/services/quiz.service";
 import { ROUTES } from "@/constants/routes";
@@ -16,6 +16,8 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { SessionTimer } from "@/components/visitor/SessionTimer";
 import { RetentionStatusCard, type RetentionStatusType } from "@/components/visitor/RetentionStatusCard";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { clearActiveSessionId, saveActiveSessionId } from "@/lib/token";
+import { useToast } from "@/stores/ToastContext";
 
 import type { UserProfile } from "@/types/user.types";
 import type { VisitSession } from "@/types/session.types";
@@ -36,24 +38,21 @@ export function HomeContent() {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showEndConfirm, setShowEndConfirm] = useState<boolean>(false);
+  const [isStartingNewVisit, setIsStartingNewVisit] = useState<boolean>(false);
+  const { toast } = useToast();
 
   const loadDashboardData = useCallback(async () => {
     setIsLoadingData(true);
     setErrorMsg(null);
 
-    // 1. Initialize visitor session
-    const sessionId = await initializeSession();
-    if (!sessionId) {
-      setIsLoadingData(false);
-      return;
-    }
+    // 1. Initialize visitor session (do not auto-create)
+    const sessionId = await initializeSession({ createIfMissing: false });
 
     try {
-      // 2. Fetch all other APIs in parallel
-      const [profileRes, historyRes, analyticsRes, retentionRes] = await Promise.all([
+      // 2. Fetch profiles, history, and retention in parallel
+      const [profileRes, historyRes, retentionRes] = await Promise.all([
         getUserProfile(),
         getSessionHistory(),
-        getSessionAnalytics(sessionId),
         getRetentionStatus(),
       ]);
 
@@ -66,34 +65,63 @@ export function HomeContent() {
         return;
       }
 
-      // Identify the current active session in the history list
-      if (historyRes.success) {
-        const activeSes = historyRes.data.find(
-          (s) => s.id === sessionId && !s.isCompleted
-        ) || historyRes.data.find((s) => s.id === sessionId);
-
-        if (activeSes) {
-          setActiveSession(activeSes);
-        }
-      }
-
-      // Handle session analytics response
-      if (analyticsRes.success) {
-        setAnalytics(analyticsRes.data);
-      }
-
       // Handle retention status response
       if (retentionRes.success) {
         setRetention(retentionRes.data);
       }
 
+      // Identify the session to display (active, or most recent completed)
+      let displaySession: VisitSession | null = null;
+      let displaySessionId = sessionId;
+
+      if (historyRes.success && historyRes.data.length > 0) {
+        const activeSes = historyRes.data.find((s) => !s.isCompleted);
+        if (activeSes) {
+          displaySession = activeSes;
+          displaySessionId = activeSes.id;
+        } else {
+          const sortedHistory = [...historyRes.data].sort((a, b) => b.id - a.id);
+          displaySession = sortedHistory[0];
+          displaySessionId = sortedHistory[0].id;
+        }
+        setActiveSession(displaySession);
+      }
+
+      // Fetch analytics for display session
+      if (displaySessionId) {
+        const analyticsRes = await getSessionAnalytics(displaySessionId);
+        if (analyticsRes.success) {
+          setAnalytics(analyticsRes.data);
+        }
+      } else {
+        setAnalytics(null);
+      }
+
     } catch (err) {
       console.error("Dashboard error:", err);
-      // Fail silently for secondary endpoints, using robust mock fallbacks if offline
     } finally {
       setIsLoadingData(false);
     }
   }, [initializeSession]);
+
+  const handleStartNewVisit = async () => {
+    setIsStartingNewVisit(true);
+    try {
+      clearActiveSessionId();
+      const result = await startSession();
+      if (result.success) {
+        saveActiveSessionId(result.data.id.toString());
+        router.push(ROUTES.quiz.preZoo);
+      } else {
+        toast.error(result.error?.message || "Gagal memulai kunjungan baru.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Terjadi kesalahan sistem saat memulai sesi baru.");
+    } finally {
+      setIsStartingNewVisit(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -234,6 +262,7 @@ export function HomeContent() {
             <SessionTimer
               checkInAt={activeSession?.checkInAt}
               checkInLabel={checkInHourFormatted}
+              isCompleted={activeSession?.isCompleted}
             />
 
             {activeSession && !activeSession.isCompleted && (
@@ -254,22 +283,52 @@ export function HomeContent() {
       {/* Scan QR Card (Below Header) */}
       <section className="px-edge-margin mt-6 relative z-10 fade-in-up animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
         <div className="bg-gradient-to-b from-white/95 to-white/85 border border-white/50 shadow-xl shadow-primary/5 rounded-[2.5rem] p-7 flex flex-col items-center text-center relative overflow-hidden backdrop-blur-lg">
-          <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-primary to-[#004d1f] flex items-center justify-center mb-5 text-white shadow-lg shadow-primary/25 relative z-10">
-            <span className="material-symbols-outlined text-[32px] font-variation-fill" style={{ fontVariationSettings: "'FILL' 1" }}>
-              qr_code_scanner
-            </span>
-          </div>
-          <h2 className="font-plus-jakarta-sans text-[19px] font-black text-on-surface mb-1.5 relative z-10">Scan Barcode Satwa</h2>
-          <p className="text-on-surface-variant/80 font-inter text-[12px] mb-6 max-w-[240px] leading-relaxed relative z-10">
-            Temukan papan QR di depan kandang satwa untuk membuka kuis, permainan, dan fakta seru!
-          </p>
-          <button
-            onClick={() => router.push(ROUTES.scan)}
-            className="bg-gradient-to-r from-primary to-[#005c24] hover:from-[#006e2b] hover:to-primary text-on-primary px-6 py-4 rounded-full font-plus-jakarta-sans text-[13px] font-extrabold tracking-wider uppercase flex items-center gap-2 transition-all w-full justify-center active:scale-[0.97] shadow-lg shadow-primary/25 cursor-pointer relative z-10 group"
-          >
-            <span>Buka Kamera Scan</span>
-            <span className="material-symbols-outlined text-sm font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span>
-          </button>
+          {(!activeSession || activeSession.isCompleted) ? (
+            <>
+              <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-primary to-[#004d1f] flex items-center justify-center mb-5 text-white shadow-lg shadow-primary/25 relative z-10">
+                <span className="material-symbols-outlined text-[32px] font-variation-fill" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  explore
+                </span>
+              </div>
+              <h2 className="font-plus-jakarta-sans text-[19px] font-black text-on-surface mb-1.5 relative z-10">Kunjungan Baru</h2>
+              <p className="text-on-surface-variant/80 font-inter text-[12px] mb-6 max-w-[240px] leading-relaxed relative z-10">
+                Mulai petualangan baru di kebun binatang! Kamu akan diajak mengerjakan kuis awal kembali.
+              </p>
+              <button
+                onClick={handleStartNewVisit}
+                disabled={isStartingNewVisit}
+                className="bg-gradient-to-r from-primary to-[#005c24] hover:from-[#006e2b] hover:to-primary text-on-primary px-6 py-4 rounded-full font-plus-jakarta-sans text-[13px] font-extrabold tracking-wider uppercase flex items-center gap-2 transition-all w-full justify-center active:scale-[0.97] shadow-lg shadow-primary/25 cursor-pointer relative z-10 group disabled:opacity-50"
+              >
+                {isStartingNewVisit ? (
+                  <span>Menyiapkan Sesi...</span>
+                ) : (
+                  <>
+                    <span>Mulai Kunjungan Baru</span>
+                    <span className="material-symbols-outlined text-sm font-bold group-hover:translate-x-1 transition-transform">play_arrow</span>
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-primary to-[#004d1f] flex items-center justify-center mb-5 text-white shadow-lg shadow-primary/25 relative z-10">
+                <span className="material-symbols-outlined text-[32px] font-variation-fill" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  qr_code_scanner
+                </span>
+              </div>
+              <h2 className="font-plus-jakarta-sans text-[19px] font-black text-on-surface mb-1.5 relative z-10">Scan Barcode Satwa</h2>
+              <p className="text-on-surface-variant/80 font-inter text-[12px] mb-6 max-w-[240px] leading-relaxed relative z-10">
+                Temukan papan QR di depan kandang satwa untuk membuka kuis, permainan, dan fakta seru!
+              </p>
+              <button
+                onClick={() => router.push(ROUTES.scan)}
+                className="bg-gradient-to-r from-primary to-[#005c24] hover:from-[#006e2b] hover:to-primary text-on-primary px-6 py-4 rounded-full font-plus-jakarta-sans text-[13px] font-extrabold tracking-wider uppercase flex items-center gap-2 transition-all w-full justify-center active:scale-[0.97] shadow-lg shadow-primary/25 cursor-pointer relative z-10 group"
+              >
+                <span>Buka Kamera Scan</span>
+                <span className="material-symbols-outlined text-sm font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </button>
+            </>
+          )}
           <div className="absolute right-0 bottom-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -z-0 pointer-events-none"></div>
         </div>
       </section>
@@ -369,12 +428,14 @@ export function HomeContent() {
               title="Kuis 1 Minggu"
               date={h7DateFormatted}
               status={retentionH7Status}
+              token={retention?.h7?.token}
             />
             <RetentionStatusCard
               label="H+30"
               title="Kuis 1 Bulan"
               date={h30DateFormatted}
               status={retentionH30Status}
+              token={retention?.h30?.token}
             />
           </div>
         </section>

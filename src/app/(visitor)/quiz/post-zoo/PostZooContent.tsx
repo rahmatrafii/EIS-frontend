@@ -12,6 +12,7 @@ import { getQuizResult } from "@/services/quiz.service";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/ui/Button";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { clearActiveSessionId } from "@/lib/token";
 
 // Peta jawaban benar statis untuk seluruh 37 pertanyaan di database.
 // Digunakan untuk menampilkan review detail jawaban benar/salah secara instan di Phase 2.
@@ -55,7 +56,7 @@ export function PostZooContent() {
   // Inisialisasi sesi kunjungan di awal load halaman
   useEffect(() => {
     async function start() {
-      const sId = await initializeSession();
+      const sId = await initializeSession({ createIfMissing: false });
       if (sId) {
         setActiveSessionId(sId);
         loadQuiz(sId);
@@ -98,6 +99,7 @@ export function PostZooContent() {
         
         // 2. End visit session
         await endSession(activeSessionId);
+        clearActiveSessionId();
 
         // 3. Fetch comparison scores
         const comparisonRes = await getQuizResult(activeSessionId);
@@ -131,37 +133,6 @@ export function PostZooContent() {
     }
   }
 
-  // Handler interaksi tombol "Kembali"
-  const handleBackStep = () => {
-    if (currentIndex > 0) {
-      // Kami melacak indeks kuis menggunakan useQuiz state. Kita bisa memodifikasi currentIndex useQuiz,
-      // tetapi useQuiz mengekspos nextQuestion, loadQuiz, dan currentIndex. 
-      // Karena useQuiz tidak mengekspos setIndex secara langsung, kita memicu perubahan state internal
-      // useQuiz secara tidak langsung dengan me-reset atau mengikatnya.
-      // Tunggu, hook useQuiz.ts yang kita lihat sebelumnya:
-      // currentIndex, nextQuestion. Tetapi tidak ada "prevQuestion" di useQuiz!
-      // Mari kita periksa kembali useQuiz.ts:
-      //   const [currentIndex, setCurrentIndex] = useState(0);
-      //   const nextQuestion = useCallback(() => { ... });
-      // Ah! useQuiz.ts tidak memiliki prevQuestion!
-      // Jadi mari kita gunakan state internal kuis jika kita ingin navigasi bolak-balik yang fleksibel,
-      // ATAU kita bisa memodifikasi useQuiz.ts untuk menambahkan `prevQuestion`!
-      // Tapi tunggu, mari kita buat navigasi kuis lokal saja di PostZooContent atau modifikasi useQuiz!
-      // Modifikasi useQuiz sangat mudah, tapi mari kita lihat apakah kita bisa mengelola navigasi currentIndex secara lokal
-      // atau memodifikasi hook useQuiz.
-      // Agar sangat bersih dan tidak menyentuh hook global, kita bisa mengelola `localIndex` di PostZooContent
-      // yang mensinkronisasi ke useQuiz jika diperlukan, atau mengelola state indeks soal secara mandiri!
-      // Tunggu, jika kita mengelola state kuis secara mandiri di komponen ini, kita punya kendali 100%!
-      // Mari kita lihat seberapa mudah mengelola kuis mandiri di komponen ini:
-      // - loadQuiz tetap kita panggil untuk fetch kuis dari API.
-      // - state `answers` di-manage secara lokal.
-      // - `localIndex` di-manage secara lokal (bisa maju dan mundur bebas!).
-      // - `submitAnswers` dipanggil menggunakan helper API `submitQuiz` langsung dari `quiz.service.ts`!
-      // Ini sangat elegan, tidak bergantung pada keterbatasan hook `useQuiz`, dan bebas bug 100%!
-      // Mari kita implementasikan kuis state secara mandiri di komponen ini menggunakan `quiz` hasil fetch dari `fetchQuizApi`!
-    }
-  };
-
   // State: Loading
   if (isLoading || isFinishing) {
     return (
@@ -188,7 +159,7 @@ export function PostZooContent() {
         <Button
           onClick={async () => {
             reset();
-            const sId = await initializeSession();
+            const sId = await initializeSession({ createIfMissing: false });
             if (sId) {
               setActiveSessionId(sId);
               loadQuiz(sId);

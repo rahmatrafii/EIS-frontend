@@ -54,7 +54,7 @@ export function PreZooContent() {
   // Inisialisasi sesi kunjungan di awal load halaman
   useEffect(() => {
     async function start() {
-      const sId = await initializeSession();
+      const sId = await initializeSession({ createIfMissing: true });
       if (sId) {
         setActiveSessionId(sId);
         // Cek apakah user sudah pernah menyelesaikan kuis pre-test di sesi aktif ini
@@ -145,7 +145,7 @@ export function PreZooContent() {
         <Button
           onClick={async () => {
             reset();
-            const sId = await initializeSession();
+            const sId = await initializeSession({ createIfMissing: true });
             if (sId) {
               setActiveSessionId(sId);
               loadQuiz(sId);

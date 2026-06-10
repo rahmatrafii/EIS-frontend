@@ -10,7 +10,8 @@ export function useSession() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const initializeSession = useCallback(async (): Promise<number | null> => {
+  const initializeSession = useCallback(async (options?: { createIfMissing?: boolean }): Promise<number | null> => {
+    const createIfMissing = options?.createIfMissing ?? false;
     // 1. Cek jika sudah ada session_id aktif di sessionStorage
     const existingSessionId = getActiveSessionId();
     if (existingSessionId) {
@@ -43,7 +44,12 @@ export function useSession() {
       console.warn("Session history check failed, attempting to create new session");
     }
 
-    // 3. Tidak ada sesi aktif di database — buat sesi baru
+    // 3. Tidak ada sesi aktif di database — buat sesi baru (hanya jika createIfMissing bernilai true)
+    if (!createIfMissing) {
+      setIsLoading(false);
+      return null;
+    }
+
     let result = await startSessionApi();
 
     // Jika terjadi SESSION_ALREADY_ACTIVE (misal akibat race condition / double-mount di React 18 dev mode),
