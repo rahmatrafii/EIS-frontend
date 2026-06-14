@@ -476,7 +476,7 @@ export function VisitResultContent() {
       <div className="fixed bottom-0 left-0 right-0 max-w-[430px] sm:max-w-2xl md:max-w-4xl mx-auto bg-white/80 backdrop-blur-lg px-edge-margin py-5 flex flex-col sm:flex-row gap-3.5 shadow-[0_-10px_30px_rgba(0,0,0,0.06)] z-50 border-t border-outline-variant/20 rounded-t-[2rem]">
         <button
           onClick={handleGoHome}
-          className="flex-1 h-14 rounded-full border-2 border-primary text-primary font-plus-jakarta-sans font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-xs cursor-pointer hover:bg-primary/5 uppercase tracking-widest"
+          className="w-full sm:flex-1 h-10 rounded-full border-2 border-primary text-primary font-plus-jakarta-sans font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-xs cursor-pointer hover:bg-primary/5 uppercase tracking-widest"
         >
           <Home className="w-4 h-4 text-primary" />
           Kembali ke Beranda
@@ -484,7 +484,7 @@ export function VisitResultContent() {
         
         <button
           onClick={handleGoToScore}
-          className="flex-1 h-14 rounded-full bg-gradient-to-r from-primary to-[#005c24] text-white font-plus-jakarta-sans font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-primary/25 text-xs cursor-pointer hover:brightness-105 uppercase tracking-widest"
+          className="w-full sm:flex-1 h-10 rounded-full bg-gradient-to-r from-primary to-[#005c24] text-white font-plus-jakarta-sans font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-primary/25 text-xs cursor-pointer hover:brightness-105 uppercase tracking-widest"
         >
           <Award className="w-4 h-4 text-white" />
           Lihat EIS Score
