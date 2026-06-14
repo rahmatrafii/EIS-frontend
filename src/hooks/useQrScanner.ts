@@ -80,17 +80,59 @@ export function useQrScanner({ onScanSuccess, onScanError }: UseQrScannerProps) 
     setPermissionStatus("loading");
     stopScanning(); // Clean up any existing instances first
 
-    try {
-      const constraints: MediaStreamConstraints = {
+    // List of constraints to try, from modern/compatible mobile format to basic fallback
+    const constraintsList: MediaStreamConstraints[] = [
+      {
         video: {
-          facingMode: "environment", // rear camera preferred
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          facingMode: { ideal: "environment" },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
         },
         audio: false,
-      };
+      },
+      {
+        video: {
+          facingMode: "environment",
+        },
+        audio: false,
+      },
+      {
+        video: true, // absolute fallback to any camera (e.g. front camera)
+        audio: false,
+      }
+    ];
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    let lastError: any = null;
+    let stream: MediaStream | null = null;
+
+    for (const constraints of constraintsList) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (stream) {
+          console.log("Successfully accessed camera with constraints:", constraints);
+          break;
+        }
+      } catch (err: any) {
+        console.warn("Failed camera access with constraints:", constraints, err);
+        lastError = err;
+      }
+    }
+
+    if (!stream) {
+      console.error("All camera initialization attempts failed:", lastError);
+      setPermissionStatus("denied");
+      setError(
+        lastError?.message || "Izin akses kamera ditolak atau kamera tidak ditemukan."
+      );
+      if (onScanError) {
+        onScanError(
+          lastError?.message || "Izin akses kamera ditolak atau kamera tidak ditemukan."
+        );
+      }
+      return;
+    }
+
+    try {
       streamRef.current = stream;
       setPermissionStatus("granted");
 
@@ -104,15 +146,11 @@ export function useQrScanner({ onScanSuccess, onScanError }: UseQrScannerProps) 
 
       setIsScanning(true);
     } catch (err: any) {
-      console.error("Camera access error:", err);
+      console.error("Error setting video stream:", err);
       setPermissionStatus("denied");
-      setError(
-        err.message || "Izin akses kamera ditolak atau kamera tidak ditemukan."
-      );
+      setError(err.message || "Gagal memproses video kamera.");
       if (onScanError) {
-        onScanError(
-          err.message || "Izin akses kamera ditolak atau kamera tidak ditemukan."
-        );
+        onScanError(err.message || "Gagal memproses video kamera.");
       }
     }
   }, [onScanError, stopScanning]);

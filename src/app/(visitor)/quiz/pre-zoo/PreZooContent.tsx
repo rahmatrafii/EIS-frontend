@@ -50,20 +50,27 @@ export function PreZooContent() {
 
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [phase, setPhase] = useState<"quiz" | "result">("quiz");
+  const [isVerifying, setIsVerifying] = useState(true);
 
   // Inisialisasi sesi kunjungan di awal load halaman
   useEffect(() => {
     async function start() {
-      const sId = await initializeSession({ createIfMissing: true });
-      if (sId) {
-        setActiveSessionId(sId);
-        // Cek apakah user sudah pernah menyelesaikan kuis pre-test di sesi aktif ini
-        const checkResult = await getQuizResult(sId);
-        if (checkResult.success && checkResult.data.hasPreZoo) {
-          router.replace(ROUTES.home);
-        } else {
-          loadQuiz(sId);
+      try {
+        const sId = await initializeSession({ createIfMissing: true });
+        if (sId) {
+          setActiveSessionId(sId);
+          // Cek apakah user sudah pernah menyelesaikan kuis pre-test di sesi aktif ini
+          const checkResult = await getQuizResult(sId);
+          if (checkResult.success && checkResult.data.hasPreZoo) {
+            router.replace(ROUTES.home);
+          } else {
+            await loadQuiz(sId);
+          }
         }
+      } catch (err) {
+        console.error("Initial load error:", err);
+      } finally {
+        setIsVerifying(false);
       }
     }
     start();
@@ -125,7 +132,7 @@ export function PreZooContent() {
   }
 
   // State: Loading
-  if (isLoading || (activeSessionId === null && !activeError)) {
+  if ((isLoading || isVerifying) && !activeError) {
     return <PageLoader text="Menyiapkan kuis untuk Anda..." minHeight="min-h-screen" />;
   }
 

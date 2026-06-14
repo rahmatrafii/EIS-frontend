@@ -47,6 +47,7 @@ export function PostZooContent() {
   const [phase, setPhase] = useState<"quiz" | "result">("quiz");
   const [showExitModal, setShowExitModal] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
 
   // State untuk perbandingan hasil kuis
   const [preTestScore, setPreTestScore] = useState(40);
@@ -56,10 +57,16 @@ export function PostZooContent() {
   // Inisialisasi sesi kunjungan di awal load halaman
   useEffect(() => {
     async function start() {
-      const sId = await initializeSession({ createIfMissing: false });
-      if (sId) {
-        setActiveSessionId(sId);
-        loadQuiz(sId);
+      try {
+        const sId = await initializeSession({ createIfMissing: false });
+        if (sId) {
+          setActiveSessionId(sId);
+          await loadQuiz(sId);
+        }
+      } catch (err) {
+        console.error("Initial load error:", err);
+      } finally {
+        setIsVerifying(false);
       }
     }
     start();
@@ -134,7 +141,7 @@ export function PostZooContent() {
   }
 
   // State: Loading
-  if (isLoading || isFinishing || (activeSessionId === null && !activeError)) {
+  if ((isLoading || isFinishing || isVerifying) && !activeError) {
     return (
       <PageLoader
         text={isFinishing ? "Menyimpan jawaban dan mengakhiri sesi..." : "Menyiapkan kuis untuk Anda..."}
