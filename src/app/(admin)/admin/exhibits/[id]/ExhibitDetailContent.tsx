@@ -207,6 +207,7 @@ export default function ExhibitDetailContent({ id }: ExhibitDetailContentProps) 
         customZone: isPredefined ? "" : exhibit.zone_name,
         description: exhibit.description || "",
       });
+      setMainPhotoUrl(exhibit.image_url || null);
     }
   }, [exhibit, zonesList]);
 
