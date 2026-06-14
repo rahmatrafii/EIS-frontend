@@ -125,7 +125,7 @@ export function PreZooContent() {
   }
 
   // State: Loading
-  if (isLoading) {
+  if (isLoading || (activeSessionId === null && !activeError)) {
     return <PageLoader text="Menyiapkan kuis untuk Anda..." minHeight="min-h-screen" />;
   }
 

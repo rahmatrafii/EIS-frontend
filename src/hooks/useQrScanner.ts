@@ -146,6 +146,17 @@ export function useQrScanner({ onScanSuccess, onScanError }: UseQrScannerProps) 
     };
   }, [isScanning, scanFrame]);
 
+  // Ensure stream is attached to the video element if it's available but not yet bound
+  useEffect(() => {
+    if (isScanning && streamRef.current && videoRef.current && videoRef.current.srcObject !== streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.setAttribute("playsinline", "true");
+      videoRef.current.play().catch((err) => {
+        console.error("Video play error in auto-attach effect:", err);
+      });
+    }
+  });
+
   return {
     videoRef,
     isScanning,

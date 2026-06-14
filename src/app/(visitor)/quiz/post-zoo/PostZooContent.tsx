@@ -134,7 +134,7 @@ export function PostZooContent() {
   }
 
   // State: Loading
-  if (isLoading || isFinishing) {
+  if (isLoading || isFinishing || (activeSessionId === null && !activeError)) {
     return (
       <PageLoader
         text={isFinishing ? "Menyimpan jawaban dan mengakhiri sesi..." : "Menyiapkan kuis untuk Anda..."}

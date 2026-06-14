@@ -19,6 +19,7 @@ export function QrScanner({ videoRef, isScanning, className }: QrScannerProps) {
         className="absolute inset-0 w-full h-full object-cover z-0"
         muted
         playsInline
+        autoPlay
       />
 
       {/* QR Target Reticle Container */}
